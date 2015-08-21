@@ -1,5 +1,4 @@
 import tweepy
-import json
 import time
 import secure as s
 
@@ -9,31 +8,16 @@ api = tweepy.API(auth)
 
 
 class Listener(tweepy.StreamListener):
-    def on_data(self, data):
-        js = json.loads(data)
-        if "RT" not in js["text"]:
-            print("Tweet: " + js["text"])
-            print("Tweet URL: http://twitter.com/" + js["user"]["screen_name"] + "/status/" + str(js["id"]))
+    def on_status(self, status):
+        if "RT" not in status.text:
             try:
-                api.update_status(u"\U0001F692" + " No fire tweets please @" +
-                                  js["user"]["screen_name"], in_reply_to_status_id=js["id"])
-                print("Tweeted @" + js["user"]["screen_name"] + "\n\n")
-                time.sleep(87)
-            except tweepy.TweepError:
-                print("API ERROR:")
-                print(tweepy.TweepError)
-                print("\n\n")
-                time.sleep(87)
-        return True
+                new = api.update_status(status=u"\U0001F692" + " No fire tweets please @" + status.author.screen_name,
+                                        in_reply_to_status_id=status.id)
+                print("https://twitter.com/NoFireTweetsPls/status/" + str(new.id))
+                time.sleep(100)
+            except tweepy.error.TweepError as e:
+                print(e.response)
 
-    def on_error(self, status):
-        print("STREAM ERROR: " + str(status))
-
-
-twitterStream = tweepy.Stream(auth, Listener())
-while True:
-    try:
-        twitterStream.filter(track=u"\U0001f525", languages="en")
-    except:
-        print("BASIC ERROR")
-        continue
+listener = Listener()
+twitterStream = tweepy.Stream(auth=auth, listener=listener)
+twitterStream.filter(track=[u"\U0001F525"], languages=["en"])
